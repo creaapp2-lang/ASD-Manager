@@ -9,8 +9,11 @@
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await initializeDateFormatting('it_IT', null);
   runApp(const SportTeamsApp());
 }
 
@@ -381,13 +384,18 @@ class _TeamPageState extends State<TeamPage> with SingleTickerProviderStateMixin
             Tab(text: 'Scouting'),
           ],
         ),
+            Tab(text: 'Gare'),
+            Tab(text: 'Album'),
+            Tab(text: 'Scouting'),
+          ],
+        ),
       ),
       body: TabBarView(
         controller: _tabController,
         children: [
           _DatiTab(team: widget.team, store: widget.store, onAdd: _addAthlete),
           _GareTab(team: widget.team, store: widget.store),
-          _AlbumTab(team: widget.team, store: widget.store),
+          _AlbumTab(team: widget.team, store: widget.store, onCreate: _addAlbum),
           const _ScoutingTab(),
         ],
       ),
@@ -427,7 +435,7 @@ class _TeamPageState extends State<TeamPage> with SingleTickerProviderStateMixin
   }
 
   void _onAddInCurrentTab() {
-    final idx = DefaultTabController.of(context).index;
+    final idx = _tabController.index;
     if (idx == 0) _addAthlete();
     if (idx == 1) _addGame();
     if (idx == 2) _addAlbum();
@@ -910,7 +918,8 @@ class _GameEditPageState extends State<GameEditPage> {
 class _AlbumTab extends StatelessWidget {
   final Team team;
   final AppStore store;
-  const _AlbumTab({required this.team, required this.store});
+  final VoidCallback onCreate;
+  const _AlbumTab({required this.team, required this.store, required this.onCreate});
 
   @override
   Widget build(BuildContext context) {
@@ -920,7 +929,7 @@ class _AlbumTab extends StatelessWidget {
         children: [
           Row(
             children: [
-              ElevatedButton.icon(onPressed: _createAlbum(context), icon: const Icon(Icons.add), label: const Text('Crea album')),
+              ElevatedButton.icon(onPressed: onCreate, icon: const Icon(Icons.add), label: const Text('Crea album')),
               const SizedBox(width: 8),
               OutlinedButton.icon(onPressed: () => _shareAlbum(context), icon: const Icon(Icons.link), label: const Text('Condividi link')),
             ],
@@ -950,23 +959,7 @@ class _AlbumTab extends StatelessWidget {
     );
   }
 
-  VoidCallback _createAlbum(BuildContext context) => () async {
-        final controller = TextEditingController();
-        final alb = await showDialog<Album?>(
-          context: context,
-          builder: (_) => AlertDialog(
-            title: const Text('Nuovo album'),
-            content: TextField(controller: controller, decoration: const InputDecoration(labelText: 'Nome album')),
-            actions: [
-              TextButton(onPressed: () => Navigator.pop(context), child: const Text('Annulla')),
-              FilledButton(onPressed: () => Navigator.pop(context, Album(id: UniqueKey().toString(), name: controller.text.trim())), child: const Text('Crea')),
-            ],
-          ),
-        );
-        if (alb != null && alb.name.isNotEmpty) {
-          store.addAlbum(team, alb);
-        }
-      };
+  
 
   void _shareAlbum(BuildContext context) {
     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Condivisione tramite link: implementare backend/storage')));
